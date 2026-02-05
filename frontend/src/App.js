@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 
 function App() {
@@ -6,15 +6,29 @@ function App() {
   const [events, setEvents] = useState([]);
   const [authenticated, setAuthenticated] = useState(false);
 
-  const backend = "http://127.0.0.1:5000";
+  const backend = "http://localhost:5000";
+
+  // Check authentication on page load
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const res = await axios.get(`${backend}/is-authenticated`);
+        setAuthenticated(res.data.authenticated);
+      } catch (err) {
+        console.error("Auth check failed:", err);
+      }
+    };
+
+    checkAuth();
+  }, []);
 
   const handleLogin = async () => {
-    const res = await axios.get(`${backend}/auth-url`);
-    window.open(res.data.url, "_blank");
-
-    setTimeout(() => {
-      setAuthenticated(true);
-    }, 3000);
+    try {
+      const res = await axios.get(`${backend}/auth-url`);
+      window.location.href = res.data.url;
+    } catch (error) {
+      console.error("Login error:", error);
+    }
   };
 
   const parseSchedule = () => {
@@ -51,11 +65,13 @@ function App() {
   };
 
   const sendToCalendar = async () => {
-    const res = await axios.post(`${backend}/create-events`, {
-      events,
-    });
-
-    alert("Events created in Google Calendar");
+    try {
+      await axios.post(`${backend}/create-events`, { events });
+      alert("Events created in Google Calendar");
+    } catch (error) {
+      console.error("Calendar error:", error);
+      alert("Error creating events. Make sure you're logged in.");
+    }
   };
 
   const disconnect = async () => {
